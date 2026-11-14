@@ -1,8 +1,23 @@
 """Tests for the Digital Logic Studio shift unit (alu.shift_unit)."""
 
+import itertools
+
 import pytest
 
-from alu.shift_unit import shift_unit
+from alu.logic_unit import simulate_graph
+from alu.shift_unit import build_shift_left_graph, shift_unit
+
+
+def _drive(width, value, amount):
+    return {
+        **{f"X{i}": (value >> i) & 1 for i in range(width)},
+        **{f"A{k}": (amount >> k) & 1 for k in range((width - 1).bit_length())},
+    }
+
+
+def _read(graph, width, value, amount):
+    outputs = simulate_graph(graph, _drive(width, value, amount))
+    return sum(outputs[f"Y{i}"] << i for i in range(width))
 
 
 def test_shift_left_moves_bits_up():
@@ -39,3 +54,22 @@ def test_shift_rejects_an_amount_outside_the_width():
 def test_shift_rejects_a_negative_amount():
     with pytest.raises(ValueError, match="amount must be non-negative"):
         shift_unit(1, -1, "SRL", 4)
+
+
+def test_left_shifter_graph_matches_the_model():
+    graph = build_shift_left_graph(width=4)
+    for value, amount in itertools.product(range(16), range(4)):
+        assert _read(graph, 4, value, amount) == shift_unit(value, amount, "SLL", 4)
+
+
+def test_left_shifter_graph_has_a_stage_per_amount_bit():
+    graph = build_shift_left_graph(width=4)
+    labels = {gate["id"] for gate in graph["gates"]}
+    assert {"X0", "X3", "A0", "A1", "Y0", "Y3"} <= labels
+    assert "A2" not in labels
+    assert graph["circuit_name"] == "4-bit Logical Left Shifter"
+
+
+def test_one_bit_left_shifter_is_a_passthrough():
+    graph = build_shift_left_graph(width=1)
+    assert _read(graph, 1, 1, 0) == 1
