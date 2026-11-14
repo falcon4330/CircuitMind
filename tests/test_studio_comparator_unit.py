@@ -52,3 +52,18 @@ def test_one_bit_comparator_equality_matches_the_bit():
     graph = build_comparator_graph(width=1)
     assert _flags(graph, 1, 1, 1)["EQ"] == 1
     assert _flags(graph, 1, 1, 0)["EQ"] == 0
+
+
+def test_comparator_graph_matches_the_model_on_greater_than():
+    graph = build_comparator_graph(width=4)
+    for a, b in itertools.product(range(16), repeat=2):
+        assert _flags(graph, 4, a, b)["GT"] == compare(a, b, 4)["gt"]
+
+
+def test_greater_than_is_decided_by_the_highest_differing_bit():
+    graph = build_comparator_graph(width=4)
+    assert _flags(graph, 4, 0b1000, 0b0111)["GT"] == 1
+    assert _flags(graph, 4, 0b0111, 0b1000)["GT"] == 0
+    assert _flags(graph, 4, 0b0101, 0b0011)["GT"] == 1
+    assert _flags(graph, 4, 0b0011, 0b0101)["GT"] == 0
+    assert _flags(graph, 4, 0b1001, 0b1001)["GT"] == 0

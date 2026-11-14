@@ -22,6 +22,24 @@ def build_comparator_graph(width: int = 4) -> dict:
     def wire(src, dst):
         wires.append({"from": src, "to": dst})
 
+    def or_reduce(terms, label):
+        """Fold `terms` pairwise into one OR tree; a lone term passes through."""
+        level, index = terms, 0
+        while len(level) > 1:
+            nxt = []
+            for k in range(0, len(level), 2):
+                if k + 1 == len(level):
+                    nxt.append(level[k])
+                    continue
+                name = f"{label}{index}"
+                gate(name, "OR")
+                wire(level[k], name)
+                wire(level[k + 1], name)
+                nxt.append(name)
+                index += 1
+            level = nxt
+        return level[0]
+
     for i in range(width):
         gate(f"A{i}", "INPUT")
         gate(f"B{i}", "INPUT")
@@ -39,14 +57,33 @@ def build_comparator_graph(width: int = 4) -> dict:
         wire(f"both{i}", f"eq{i}")
         wire(f"neither{i}", f"eq{i}")
 
-    eq = f"eq{width - 1}"
+    prefix = [None] * width
+    prefix[width - 1] = f"eq{width - 1}"
     for i in range(width - 2, -1, -1):
         name = f"pe{i}"
         gate(name, "AND")
         wire(f"eq{i}", name)
-        wire(eq, name)
-        eq = name
+        wire(prefix[i + 1], name)
+        prefix[i] = name
 
     gate("EQ", "OUTPUT")
-    wire(eq, "EQ")
+    wire(prefix[0], "EQ")
+
+    # GT: a bit where A is 1 and B is 0, with every higher bit equal.
+    gt_terms = []
+    for i in range(width):
+        gate(f"gt{i}", "AND")
+        wire(f"A{i}", f"gt{i}")
+        wire(f"nB{i}", f"gt{i}")
+        if i + 1 < width:
+            term = f"gtp{i}"
+            gate(term, "AND")
+            wire(f"gt{i}", term)
+            wire(prefix[i + 1], term)
+            gt_terms.append(term)
+        else:
+            gt_terms.append(f"gt{i}")
+
+    gate("GT", "OUTPUT")
+    wire(or_reduce(gt_terms, "gor"), "GT")
     return {"circuit_name": f"{width}-bit Comparator", "gates": gates, "wires": wires}
