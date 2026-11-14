@@ -6,6 +6,7 @@ import pytest
 
 from alu.logic_unit import (
     circuit_depth,
+    circuit_summary,
     evaluate_all,
     grade_circuit,
     simulate_graph,
@@ -236,3 +237,24 @@ def test_circuit_depth_without_outputs_is_zero():
         "wires": [],
     }
     assert circuit_depth(graph) == 0
+
+
+def test_circuit_summary_of_a_full_adder():
+    summary = circuit_summary(_full_adder())
+    assert summary["circuit_name"] == "Full Adder"
+    assert summary["gate_counts"] == {"AND": 2, "INPUT": 3, "OR": 1, "OUTPUT": 2, "XOR": 2}
+    assert summary["inputs"] == ["A", "B", "CIN"]
+    assert summary["outputs"] == ["SUM", "COUT"]
+    assert summary["gate_count"] == 10
+    assert summary["wire_count"] == 12
+    assert summary["depth"] == 4
+
+
+def test_circuit_summary_of_a_bare_input():
+    graph = {"gates": [{"id": "A", "type": "INPUT"}], "wires": []}
+    summary = circuit_summary(graph)
+    assert summary["circuit_name"] == ""
+    assert summary["gate_counts"] == {"INPUT": 1}
+    assert summary["inputs"] == ["A"]
+    assert summary["outputs"] == []
+    assert summary["depth"] == 0

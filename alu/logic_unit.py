@@ -260,6 +260,28 @@ def circuit_depth(graph: dict) -> int:
     return max((measure(gid) for gid in outputs), default=0)
 
 
+def circuit_summary(graph: dict) -> dict:
+    """Summarise a graph for the Logic Studio side panel.
+
+    Reports the circuit name, gate counts per type, the INPUT and OUTPUT gate
+    ids in declaration order, the total gate and wire counts, and the depth
+    of the longest combinational path.
+    """
+    _validate_graph(graph)
+    counts = {}
+    for gate in graph["gates"]:
+        counts[gate["type"]] = counts.get(gate["type"], 0) + 1
+    return {
+        "circuit_name": graph.get("circuit_name", ""),
+        "gate_counts": dict(sorted(counts.items())),
+        "inputs": [g["id"] for g in graph["gates"] if g["type"] == "INPUT"],
+        "outputs": [g["id"] for g in graph["gates"] if g["type"] == "OUTPUT"],
+        "gate_count": len(graph["gates"]),
+        "wire_count": len(graph["wires"]),
+        "depth": circuit_depth(graph),
+    }
+
+
 _UNARY_GATES  = {"NOT", "BUFFER"}
 _BINARY_GATES = {"AND", "NAND", "OR", "NOR", "XOR", "XNOR"}
 _NUM_INPUTS = {"INPUT": 0, "OUTPUT": 1, "NOT": 1}  # every other gate type has 2 inputs
