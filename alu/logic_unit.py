@@ -110,12 +110,20 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
             r = ins[0]
         elif t == "NOT":
             r = 1 - ins[0]
+        elif t == "BUFFER":
+            r = int(ins[0])
         elif t == "AND":
             r = int(all(ins))
+        elif t == "NAND":
+            r = int(not all(ins))
         elif t == "OR":
             r = int(any(ins))
+        elif t == "NOR":
+            r = int(not any(ins))
         elif t == "XOR":
             r = sum(ins) % 2
+        elif t == "XNOR":
+            r = int(not (sum(ins) % 2))
         else:
             raise ValueError(f"unknown gate type {t}")
         visiting.discard(gid)

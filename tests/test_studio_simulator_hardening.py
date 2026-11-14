@@ -135,3 +135,46 @@ def test_self_loop_is_reported_as_cycle():
     )
     with pytest.raises(ValueError, match="combinational cycle"):
         simulate_graph(graph, {})
+
+
+@pytest.mark.parametrize(
+    "gtype,expected",
+    [
+        ("AND", {0: 0, 1: 0, 2: 0, 3: 1}),
+        ("NAND", {0: 1, 1: 1, 2: 1, 3: 0}),
+        ("OR", {0: 0, 1: 1, 2: 1, 3: 1}),
+        ("NOR", {0: 1, 1: 0, 2: 0, 3: 0}),
+        ("XOR", {0: 0, 1: 1, 2: 1, 3: 0}),
+        ("XNOR", {0: 1, 1: 0, 2: 0, 3: 1}),
+    ],
+)
+def test_binary_gate_truth_tables(gtype, expected):
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "B", "type": "INPUT"},
+            {"id": "G", "type": gtype},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [
+            {"from": "A", "to": "G"},
+            {"from": "B", "to": "G"},
+            {"from": "G", "to": "Y"},
+        ],
+    )
+    for index, out in expected.items():
+        assert simulate_graph(graph, {"A": index & 1, "B": (index >> 1) & 1}) == {"Y": out}
+
+
+@pytest.mark.parametrize("gtype,expected", [("NOT", {0: 1, 1: 0}), ("BUFFER", {0: 0, 1: 1})])
+def test_unary_gates(gtype, expected):
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "G", "type": gtype},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [{"from": "A", "to": "G"}, {"from": "G", "to": "Y"}],
+    )
+    for value, out in expected.items():
+        assert simulate_graph(graph, {"A": value}) == {"Y": out}
