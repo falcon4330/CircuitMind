@@ -226,6 +226,40 @@ def grade_circuit(graph: dict, truth_table) -> dict:
     return {"passed": not failing_rows, "failing_rows": failing_rows}
 
 
+def circuit_depth(graph: dict) -> int:
+    """Return the levels of logic on the deepest path to an OUTPUT gate.
+
+    INPUT gates sit at level 0 and every other gate adds one level on top of
+    its deepest driver. A combinational cycle has no finite depth and raises
+    ValueError instead of overflowing the recursion limit.
+    """
+    _validate_graph(graph)
+    types = {g["id"]: g["type"] for g in graph["gates"]}
+    sources = {gid: [] for gid in types}
+    for w in graph["wires"]:
+        sources[w["to"]].append(w["from"])
+
+    depth = {}
+    visiting: set = set()
+
+    def measure(gid):
+        if gid in depth:
+            return depth[gid]
+        if gid in visiting:
+            raise ValueError(f"combinational cycle detected at gate '{gid}'")
+        visiting.add(gid)
+        if types[gid] == "INPUT":
+            d = 0
+        else:
+            d = 1 + max((measure(s) for s in sources[gid]), default=0)
+        visiting.discard(gid)
+        depth[gid] = d
+        return d
+
+    outputs = [gid for gid, gtype in types.items() if gtype == "OUTPUT"]
+    return max((measure(gid) for gid in outputs), default=0)
+
+
 _UNARY_GATES  = {"NOT", "BUFFER"}
 _BINARY_GATES = {"AND", "NAND", "OR", "NOR", "XOR", "XNOR"}
 _NUM_INPUTS = {"INPUT": 0, "OUTPUT": 1, "NOT": 1}  # every other gate type has 2 inputs

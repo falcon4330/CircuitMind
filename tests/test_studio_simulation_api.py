@@ -5,6 +5,7 @@ import itertools
 import pytest
 
 from alu.logic_unit import (
+    circuit_depth,
     evaluate_all,
     grade_circuit,
     simulate_graph,
@@ -172,3 +173,66 @@ def test_grade_circuit_on_an_empty_table_passes():
 def test_grade_circuit_rejects_rows_without_outputs():
     with pytest.raises(ValueError, match="truth table row 0 needs 'inputs' and 'outputs'"):
         grade_circuit(_full_adder(), [{"inputs": {"A": 0, "B": 0, "CIN": 0}}])
+
+
+def test_circuit_depth_of_a_full_adder():
+    # SUM needs 3 levels (X1, X2, SUM); the carry path needs 4
+    # (X1, A2, OR1, COUT).
+    assert circuit_depth(_full_adder()) == 4
+
+
+def test_circuit_depth_of_a_wire_is_one():
+    graph = {
+        "circuit_name": "Wire",
+        "gates": [{"id": "A", "type": "INPUT"}, {"id": "Y", "type": "OUTPUT"}],
+        "wires": [{"from": "A", "to": "Y"}],
+    }
+    assert circuit_depth(graph) == 1
+
+
+def test_circuit_depth_follows_the_longest_branch():
+    graph = {
+        "circuit_name": "Lopsided",
+        "gates": [
+            {"id": "A", "type": "INPUT"},
+            {"id": "B", "type": "INPUT"},
+            {"id": "N1", "type": "NOT"},
+            {"id": "N2", "type": "NOT"},
+            {"id": "Y", "type": "OUTPUT"},
+            {"id": "Z", "type": "OUTPUT"},
+        ],
+        "wires": [
+            {"from": "A", "to": "N1"},
+            {"from": "N1", "to": "N2"},
+            {"from": "N2", "to": "Y"},
+            {"from": "B", "to": "Z"},
+        ],
+    }
+    assert circuit_depth(graph) == 3
+
+
+def test_circuit_depth_reports_cycles():
+    graph = {
+        "circuit_name": "Loop",
+        "gates": [
+            {"id": "N1", "type": "NOT"},
+            {"id": "N2", "type": "NOT"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        "wires": [
+            {"from": "N1", "to": "N2"},
+            {"from": "N2", "to": "N1"},
+            {"from": "N2", "to": "Y"},
+        ],
+    }
+    with pytest.raises(ValueError, match="combinational cycle"):
+        circuit_depth(graph)
+
+
+def test_circuit_depth_without_outputs_is_zero():
+    graph = {
+        "circuit_name": "No outputs",
+        "gates": [{"id": "A", "type": "INPUT"}],
+        "wires": [],
+    }
+    assert circuit_depth(graph) == 0
