@@ -105,3 +105,10 @@ def build_comparator_graph(width: int = 4) -> dict:
     gate("LT", "OUTPUT")
     wire(or_reduce(lt_terms, "lor"), "LT")
     return {"circuit_name": f"{width}-bit Comparator", "gates": gates, "wires": wires}
+
+
+def comparator_gate_json(width: int = 4) -> dict:
+    """Export the comparator circuit in the Studio's gate_json format."""
+    from alu.logic_unit import to_gate_json
+
+    return to_gate_json(build_comparator_graph(width))

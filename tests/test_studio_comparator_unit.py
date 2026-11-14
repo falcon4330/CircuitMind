@@ -4,7 +4,7 @@ import itertools
 
 import pytest
 
-from alu.comparator_unit import build_comparator_graph, compare
+from alu.comparator_unit import build_comparator_graph, comparator_gate_json, compare
 from alu.logic_unit import simulate_graph
 
 
@@ -81,3 +81,18 @@ def test_comparator_flags_are_exactly_one_of_three():
         flags = _flags(graph, 4, a, b)
         assert sorted(flags) == ["EQ", "GT", "LT"]
         assert sum(flags.values()) == 1
+
+
+def test_comparator_gate_json_exports_three_outputs():
+    payload = comparator_gate_json(width=4)
+    assert payload["inputCounter"] == 8
+    assert payload["outputCounter"] == 3
+    assert payload["gateIdCounter"] == len(payload["gates"])
+    labels = {gate["label"] for gate in payload["gates"]}
+    assert {"A0", "B3", "EQ", "GT", "LT"} <= labels
+
+
+def test_one_bit_comparator_gate_json_exports_two_inputs():
+    payload = comparator_gate_json(width=1)
+    assert payload["inputCounter"] == 2
+    assert payload["outputCounter"] == 3
