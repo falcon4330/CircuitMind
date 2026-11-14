@@ -10,6 +10,21 @@ def compare(a: int, b: int, width: int = 4) -> dict:
     return {"eq": int(a == b), "gt": int(a > b), "lt": int(a < b)}
 
 
+def compare_signed(a: int, b: int, width: int = 4) -> dict:
+    """Reference model: compare two two's-complement operands of `width` bits."""
+    if width < 1:
+        raise ValueError(f"width must be at least 1, got {width}")
+    mask = (1 << width) - 1
+    sign = 1 << (width - 1)
+
+    def signed(value):
+        value &= mask
+        return value - (1 << width) if value & sign else value
+
+    a, b = signed(a), signed(b)
+    return {"eq": int(a == b), "gt": int(a > b), "lt": int(a < b)}
+
+
 def build_comparator_graph(width: int = 4) -> dict:
     """Comparator circuit: per-bit equality folded into the EQ output."""
     if width < 1:

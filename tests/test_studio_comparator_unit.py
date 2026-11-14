@@ -4,7 +4,12 @@ import itertools
 
 import pytest
 
-from alu.comparator_unit import build_comparator_graph, comparator_gate_json, compare
+from alu.comparator_unit import (
+    build_comparator_graph,
+    comparator_gate_json,
+    compare,
+    compare_signed,
+)
 from alu.logic_unit import simulate_graph
 
 
@@ -96,3 +101,24 @@ def test_one_bit_comparator_gate_json_exports_two_inputs():
     payload = comparator_gate_json(width=1)
     assert payload["inputCounter"] == 2
     assert payload["outputCounter"] == 3
+
+
+def test_signed_compare_orders_negatives_below_positives():
+    assert compare_signed(0b1000, 0b0111, 4) == {"eq": 0, "gt": 0, "lt": 1}
+    assert compare_signed(0b0111, 0b1000, 4) == {"eq": 0, "gt": 1, "lt": 0}
+    assert compare_signed(0b1111, 0b0001, 4) == {"eq": 0, "gt": 0, "lt": 1}
+
+
+def test_signed_compare_differs_from_unsigned_on_the_sign_bit():
+    assert compare(0b1111, 0b0001, 4)["gt"] == 1
+    assert compare_signed(0b1111, 0b0001, 4)["gt"] == 0
+
+
+def test_signed_compare_treats_equivalent_bit_patterns_as_equal():
+    assert compare_signed(0xFF, 0x0F, 4) == {"eq": 1, "gt": 0, "lt": 0}
+    assert compare_signed(0b1000, 0b1000, 4) == {"eq": 1, "gt": 0, "lt": 0}
+
+
+def test_signed_compare_rejects_a_non_positive_width():
+    with pytest.raises(ValueError, match="width must be at least 1"):
+        compare_signed(0, 0, 0)
