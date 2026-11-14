@@ -55,8 +55,33 @@ def build_logic_unit_graph(width: int = 4) -> dict:
     return {"circuit_name": f"{width}-bit ALU Logic Unit", "gates": gates, "wires": wires}
 
 
+def _validate_graph(graph: dict) -> None:
+    """Reject graphs that cannot be evaluated, with actionable messages."""
+    if not isinstance(graph, dict):
+        raise ValueError("graph must be a dict with 'gates' and 'wires'")
+    gates = graph.get("gates")
+    wires = graph.get("wires")
+    if not isinstance(gates, list) or not isinstance(wires, list):
+        raise ValueError("graph must define 'gates' and 'wires' lists")
+
+    for g in gates:
+        if not isinstance(g, dict) or "id" not in g or "type" not in g:
+            raise ValueError(f"each gate needs 'id' and 'type': {g!r}")
+
+    ids = [g["id"] for g in gates]
+    known = set(ids)
+    for w in wires:
+        if not isinstance(w, dict) or "from" not in w or "to" not in w:
+            raise ValueError(f"each wire needs 'from' and 'to': {w!r}")
+        if w["from"] not in known:
+            raise ValueError(f"wire references unknown gate '{w['from']}'")
+        if w["to"] not in known:
+            raise ValueError(f"wire references unknown gate '{w['to']}'")
+
+
 def simulate_graph(graph: dict, inputs: dict) -> dict:
     """Evaluate the gate graph. `inputs` maps input id -> 0/1."""
+    _validate_graph(graph)
     types = {g["id"]: g["type"] for g in graph["gates"]}
     sources = {gid: [] for gid in types}
     for w in graph["wires"]:
