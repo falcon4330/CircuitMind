@@ -86,4 +86,22 @@ def build_comparator_graph(width: int = 4) -> dict:
 
     gate("GT", "OUTPUT")
     wire(or_reduce(gt_terms, "gor"), "GT")
+
+    # LT mirrors GT with the operands swapped.
+    lt_terms = []
+    for i in range(width):
+        gate(f"lt{i}", "AND")
+        wire(f"B{i}", f"lt{i}")
+        wire(f"nA{i}", f"lt{i}")
+        if i + 1 < width:
+            term = f"ltp{i}"
+            gate(term, "AND")
+            wire(f"lt{i}", term)
+            wire(prefix[i + 1], term)
+            lt_terms.append(term)
+        else:
+            lt_terms.append(f"lt{i}")
+
+    gate("LT", "OUTPUT")
+    wire(or_reduce(lt_terms, "lor"), "LT")
     return {"circuit_name": f"{width}-bit Comparator", "gates": gates, "wires": wires}

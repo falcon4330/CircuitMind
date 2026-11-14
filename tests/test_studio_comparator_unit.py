@@ -67,3 +67,17 @@ def test_greater_than_is_decided_by_the_highest_differing_bit():
     assert _flags(graph, 4, 0b0101, 0b0011)["GT"] == 1
     assert _flags(graph, 4, 0b0011, 0b0101)["GT"] == 0
     assert _flags(graph, 4, 0b1001, 0b1001)["GT"] == 0
+
+
+def test_comparator_graph_matches_the_model_on_less_than():
+    graph = build_comparator_graph(width=4)
+    for a, b in itertools.product(range(16), repeat=2):
+        assert _flags(graph, 4, a, b)["LT"] == compare(a, b, 4)["lt"]
+
+
+def test_comparator_flags_are_exactly_one_of_three():
+    graph = build_comparator_graph(width=4)
+    for a, b in itertools.product(range(16), repeat=2):
+        flags = _flags(graph, 4, a, b)
+        assert sorted(flags) == ["EQ", "GT", "LT"]
+        assert sum(flags.values()) == 1
