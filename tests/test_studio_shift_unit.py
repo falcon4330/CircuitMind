@@ -7,8 +7,10 @@ import pytest
 from alu.logic_unit import simulate_graph
 from alu.shift_unit import (
     build_shift_arithmetic_right_graph,
+    build_shift_graph,
     build_shift_left_graph,
     build_shift_right_graph,
+    shift_gate_json,
     shift_unit,
 )
 
@@ -124,3 +126,28 @@ def test_arithmetic_and_logical_right_shifters_differ_only_on_negatives():
     assert _read(logical, 4, 0b1000, 1) != _read(arithmetic, 4, 0b1000, 1)
     for value, amount in itertools.product(range(8), range(4)):
         assert _read(logical, 4, value, amount) == _read(arithmetic, 4, value, amount)
+
+
+def test_build_shift_graph_dispatches_on_mode():
+    assert build_shift_graph(4, "SLL")["circuit_name"] == "4-bit Logical Left Shifter"
+    assert build_shift_graph(4, "SRL")["circuit_name"] == "4-bit Logical Right Shifter"
+    assert build_shift_graph(4, "SRA")["circuit_name"] == "4-bit Arithmetic Right Shifter"
+
+
+def test_build_shift_graph_rejects_unknown_modes():
+    with pytest.raises(ValueError, match="mode must be one of SLL, SRL, SRA"):
+        build_shift_graph(4, "ROR")
+
+
+def test_shift_gate_json_exports_the_chosen_mode():
+    payload = shift_gate_json(width=4, mode="SRA")
+    assert payload["inputCounter"] == 6          # 4 value bits + 2 amount bits
+    assert payload["outputCounter"] == 4
+    labels = {gate["label"] for gate in payload["gates"]}
+    assert {"X0", "X3", "A0", "A1", "Y0", "Y3"} <= labels
+    assert payload["wireIdCounter"] == len(payload["wires"])
+
+
+def test_shift_gate_json_rejects_a_zero_width():
+    with pytest.raises(ValueError, match="width must be at least 1"):
+        shift_gate_json(width=0, mode="SLL")

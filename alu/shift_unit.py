@@ -124,3 +124,24 @@ def build_shift_right_graph(width: int = 4) -> dict:
 def build_shift_arithmetic_right_graph(width: int = 4) -> dict:
     """Barrel shifter: X is shifted right arithmetically, keeping the sign."""
     return _build_right_graph(width, arithmetic=True)
+
+
+_BUILDERS = {
+    "SLL": build_shift_left_graph,
+    "SRL": build_shift_right_graph,
+    "SRA": build_shift_arithmetic_right_graph,
+}
+
+
+def build_shift_graph(width: int = 4, mode: str = "SLL") -> dict:
+    """Build the shifter circuit for `mode` (SLL, SRL or SRA)."""
+    if mode not in _BUILDERS:
+        raise ValueError(f"mode must be one of {', '.join(MODES)}, got {mode!r}")
+    return _BUILDERS[mode](width)
+
+
+def shift_gate_json(width: int = 4, mode: str = "SLL") -> dict:
+    """Export the shifter circuit in the Studio's gate_json format."""
+    from alu.logic_unit import to_gate_json
+
+    return to_gate_json(build_shift_graph(width, mode))
