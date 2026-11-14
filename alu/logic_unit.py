@@ -79,8 +79,12 @@ def _validate_graph(graph: dict) -> None:
             raise ValueError(f"wire references unknown gate '{w['to']}'")
 
 
-def simulate_graph(graph: dict, inputs: dict) -> dict:
-    """Evaluate the gate graph. `inputs` maps input id -> 0/1."""
+def evaluate_all(graph: dict, inputs: dict) -> dict:
+    """Evaluate every gate and return {gate id: 0/1}.
+
+    Unlike simulate_graph this keeps intermediate gate values, which the
+    Logic Studio uses to highlight the active path for a given input vector.
+    """
     _validate_graph(graph)
     types = {g["id"]: g["type"] for g in graph["gates"]}
     sources = {gid: [] for gid in types}
@@ -140,7 +144,17 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
         cache[gid] = r
         return r
 
-    return {gid: val(gid) for gid, t in types.items() if t == "OUTPUT"}
+    return {gid: val(gid) for gid in types}
+
+
+def simulate_graph(graph: dict, inputs: dict) -> dict:
+    """Evaluate the gate graph and return {output gate id: 0/1}.
+
+    `inputs` maps input gate id -> 0/1.
+    """
+    values = evaluate_all(graph, inputs)
+    types = {g["id"]: g["type"] for g in graph["gates"]}
+    return {gid: values[gid] for gid, gtype in types.items() if gtype == "OUTPUT"}
 
 
 _UNARY_GATES  = {"NOT", "BUFFER"}
