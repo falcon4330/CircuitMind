@@ -68,3 +68,42 @@ def test_valid_graph_still_evaluates():
         ],
     )
     assert simulate_graph(graph, {"A": 1, "B": 1}) == {"Y": 1}
+
+
+def test_missing_input_value_names_the_gate():
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "B", "type": "INPUT"},
+            {"id": "G", "type": "AND"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [
+            {"from": "A", "to": "G"},
+            {"from": "B", "to": "G"},
+            {"from": "G", "to": "Y"},
+        ],
+    )
+    with pytest.raises(ValueError, match="missing input values for: B"):
+        simulate_graph(graph, {"A": 1})
+
+
+def test_unconnected_input_still_requires_a_value():
+    graph = _graph(
+        [{"id": "A", "type": "INPUT"}, {"id": "Y", "type": "OUTPUT"}],
+        [],
+    )
+    with pytest.raises(ValueError, match="missing input values for: A"):
+        simulate_graph(graph, {})
+
+
+def test_extra_input_values_are_ignored():
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "N", "type": "NOT"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [{"from": "A", "to": "N"}, {"from": "N", "to": "Y"}],
+    )
+    assert simulate_graph(graph, {"A": 0, "UNUSED": 1}) == {"Y": 1}

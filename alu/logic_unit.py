@@ -86,6 +86,14 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
     sources = {gid: [] for gid in types}
     for w in graph["wires"]:
         sources[w["to"]].append(w["from"])
+
+    missing = sorted(
+        gid for gid, gtype in types.items()
+        if gtype == "INPUT" and gid not in inputs
+    )
+    if missing:
+        raise ValueError(f"missing input values for: {', '.join(missing)}")
+
     cache = {}
 
     def val(gid):
