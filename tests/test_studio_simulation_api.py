@@ -4,7 +4,13 @@ import itertools
 
 import pytest
 
-from alu.logic_unit import evaluate_all, simulate_graph, simulate_vectors, truth_table_for
+from alu.logic_unit import (
+    evaluate_all,
+    grade_circuit,
+    simulate_graph,
+    simulate_vectors,
+    truth_table_for,
+)
 
 
 def _full_adder():
@@ -137,3 +143,32 @@ def test_truth_table_for_refuses_wide_graphs():
     }
     with pytest.raises(ValueError, match="truth table limited to 2"):
         truth_table_for(graph, max_inputs=2)
+
+
+def test_grade_circuit_passes_its_own_truth_table():
+    result = grade_circuit(_full_adder(), truth_table_for(_full_adder()))
+    assert result == {"passed": True, "failing_rows": []}
+
+
+def test_grade_circuit_reports_only_the_wrong_row():
+    table = [
+        {"inputs": {"A": 0, "B": 0, "CIN": 0}, "outputs": {"SUM": 0, "COUT": 0}},
+        {"inputs": {"A": 1, "B": 1, "CIN": 0}, "outputs": {"SUM": 1, "COUT": 0}},
+        {"inputs": {"A": 1, "B": 1, "CIN": 1}, "outputs": {"SUM": 1, "COUT": 1}},
+    ]
+    result = grade_circuit(_full_adder(), table)
+    assert result["passed"] is False
+    assert [row["row"] for row in result["failing_rows"]] == [1]
+    failing = result["failing_rows"][0]
+    assert failing["inputs"] == {"A": 1, "B": 1, "CIN": 0}
+    assert failing["expected"] == {"SUM": 1, "COUT": 0}
+    assert failing["actual"] == {"SUM": 0, "COUT": 1}
+
+
+def test_grade_circuit_on_an_empty_table_passes():
+    assert grade_circuit(_full_adder(), []) == {"passed": True, "failing_rows": []}
+
+
+def test_grade_circuit_rejects_rows_without_outputs():
+    with pytest.raises(ValueError, match="truth table row 0 needs 'inputs' and 'outputs'"):
+        grade_circuit(_full_adder(), [{"inputs": {"A": 0, "B": 0, "CIN": 0}}])

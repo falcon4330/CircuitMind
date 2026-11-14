@@ -198,6 +198,34 @@ def truth_table_for(graph: dict, max_inputs: int = _MAX_TRUTH_TABLE_INPUTS) -> l
     return rows
 
 
+def grade_circuit(graph: dict, truth_table) -> dict:
+    """Compare the graph against an expected truth table.
+
+    Every row must provide `inputs` and `outputs`; the keys of `outputs` are
+    the expected values per OUTPUT gate. Returns `passed` plus one entry per
+    disagreeing row so the Studio can point at the exact vector that fails.
+    """
+    _validate_graph(graph)
+    failing_rows = []
+    for index, row in enumerate(truth_table):
+        if not isinstance(row, dict) or "inputs" not in row or "outputs" not in row:
+            raise ValueError(
+                f"truth table row {index} needs 'inputs' and 'outputs', got {row!r}"
+            )
+        expected = row["outputs"]
+        actual = simulate_graph(graph, row["inputs"])
+        if any(actual.get(gid) != value for gid, value in expected.items()):
+            failing_rows.append(
+                {
+                    "row": index,
+                    "inputs": dict(row["inputs"]),
+                    "expected": dict(expected),
+                    "actual": actual,
+                }
+            )
+    return {"passed": not failing_rows, "failing_rows": failing_rows}
+
+
 _UNARY_GATES  = {"NOT", "BUFFER"}
 _BINARY_GATES = {"AND", "NAND", "OR", "NOR", "XOR", "XNOR"}
 _NUM_INPUTS = {"INPUT": 0, "OUTPUT": 1, "NOT": 1}  # every other gate type has 2 inputs
