@@ -112,26 +112,24 @@ def test_extra_input_values_are_ignored():
 def test_combinational_cycle_is_reported():
     graph = _graph(
         [
-            {"id": "A", "type": "INPUT"},
             {"id": "N1", "type": "NOT"},
             {"id": "N2", "type": "NOT"},
             {"id": "Y", "type": "OUTPUT"},
         ],
         [
-            {"from": "A", "to": "N1"},
             {"from": "N1", "to": "N2"},
             {"from": "N2", "to": "N1"},
             {"from": "N2", "to": "Y"},
         ],
     )
     with pytest.raises(ValueError, match="combinational cycle"):
-        simulate_graph(graph, {"A": 1})
+        simulate_graph(graph, {})
 
 
 def test_self_loop_is_reported_as_cycle():
     graph = _graph(
-        [{"id": "G", "type": "AND"}, {"id": "Y", "type": "OUTPUT"}],
-        [{"from": "G", "to": "G"}, {"from": "G", "to": "Y"}],
+        [{"id": "B", "type": "BUFFER"}, {"id": "Y", "type": "OUTPUT"}],
+        [{"from": "B", "to": "B"}, {"from": "B", "to": "Y"}],
     )
     with pytest.raises(ValueError, match="combinational cycle"):
         simulate_graph(graph, {})
@@ -178,3 +176,57 @@ def test_unary_gates(gtype, expected):
     )
     for value, out in expected.items():
         assert simulate_graph(graph, {"A": value}) == {"Y": out}
+
+
+def test_unconnected_and_gate_is_rejected():
+    graph = _graph(
+        [{"id": "G", "type": "AND"}, {"id": "Y", "type": "OUTPUT"}],
+        [{"from": "G", "to": "Y"}],
+    )
+    # An AND with no inputs used to evaluate to 1 because all([]) is True.
+    with pytest.raises(ValueError, match="needs at least 2 inputs, found 0"):
+        simulate_graph(graph, {})
+
+
+def test_single_input_and_gate_is_rejected():
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "G", "type": "AND"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [{"from": "A", "to": "G"}, {"from": "G", "to": "Y"}],
+    )
+    with pytest.raises(ValueError, match="needs at least 2 inputs, found 1"):
+        simulate_graph(graph, {"A": 1})
+
+
+def test_not_gate_with_two_drivers_is_rejected():
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "B", "type": "INPUT"},
+            {"id": "N", "type": "NOT"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [
+            {"from": "A", "to": "N"},
+            {"from": "B", "to": "N"},
+            {"from": "N", "to": "Y"},
+        ],
+    )
+    with pytest.raises(ValueError, match="needs exactly 1 input, found 2"):
+        simulate_graph(graph, {"A": 1, "B": 0})
+
+
+def test_unknown_gate_type_names_the_gate():
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "G", "type": "IMPLIES"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [{"from": "A", "to": "G"}, {"from": "G", "to": "Y"}],
+    )
+    with pytest.raises(ValueError, match="IMPLIES.*'G'"):
+        simulate_graph(graph, {"A": 1})

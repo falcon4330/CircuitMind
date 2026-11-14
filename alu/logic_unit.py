@@ -103,7 +103,13 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
         if gid in visiting:
             raise ValueError(f"combinational cycle detected at gate '{gid}'")
         visiting.add(gid)
-        t, ins = types[gid], [val(s) for s in sources[gid]]
+        t = types[gid]
+        srcs = sources[gid]
+        if t in _UNARY_GATES and len(srcs) != 1:
+            raise ValueError(f"gate '{gid}' ({t}) needs exactly 1 input, found {len(srcs)}")
+        if t in _BINARY_GATES and len(srcs) < 2:
+            raise ValueError(f"gate '{gid}' ({t}) needs at least 2 inputs, found {len(srcs)}")
+        ins = [val(s) for s in srcs]
         if t == "INPUT":
             r = inputs[gid]
         elif t == "OUTPUT":
@@ -125,12 +131,16 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
         elif t == "XNOR":
             r = int(not (sum(ins) % 2))
         else:
-            raise ValueError(f"unknown gate type {t}")
+            raise ValueError(f"unknown gate type {t!r} on gate '{gid}'")
         visiting.discard(gid)
         cache[gid] = r
         return r
 
     return {gid: val(gid) for gid, t in types.items() if t == "OUTPUT"}
+
+
+_UNARY_GATES  = {"NOT", "BUFFER"}
+_BINARY_GATES = {"AND", "NAND", "OR", "NOR", "XOR", "XNOR"}
 _NUM_INPUTS = {"INPUT": 0, "OUTPUT": 1, "NOT": 1}  # every other gate type has 2 inputs
 
 
