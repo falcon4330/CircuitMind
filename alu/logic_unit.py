@@ -157,6 +157,24 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
     return {gid: values[gid] for gid, gtype in types.items() if gtype == "OUTPUT"}
 
 
+def simulate_vectors(graph: dict, vectors) -> list:
+    """Evaluate the graph once per input vector.
+
+    `vectors` is an iterable of input mappings. The returned list holds one
+    OUTPUT mapping per vector, in the same order, so a caller can render a
+    batch of rows without driving simulate_graph by hand.
+    """
+    results = []
+    for index, inputs in enumerate(vectors):
+        if not isinstance(inputs, dict):
+            raise ValueError(
+                f"vector {index} must be a mapping of input gate id -> 0/1, "
+                f"got {type(inputs).__name__}"
+            )
+        results.append(simulate_graph(graph, inputs))
+    return results
+
+
 _UNARY_GATES  = {"NOT", "BUFFER"}
 _BINARY_GATES = {"AND", "NAND", "OR", "NOR", "XOR", "XNOR"}
 _NUM_INPUTS = {"INPUT": 0, "OUTPUT": 1, "NOT": 1}  # every other gate type has 2 inputs

@@ -4,7 +4,7 @@ import itertools
 
 import pytest
 
-from alu.logic_unit import evaluate_all, simulate_graph
+from alu.logic_unit import evaluate_all, simulate_graph, simulate_vectors
 
 
 def _full_adder():
@@ -77,3 +77,33 @@ def test_simulate_graph_matches_expected_adder_rows():
 def test_evaluate_all_still_validates_missing_inputs():
     with pytest.raises(ValueError, match="missing input values"):
         evaluate_all(_full_adder(), {"A": 1})
+
+
+def test_simulate_vectors_returns_one_row_per_vector():
+    vectors = [
+        {"A": 0, "B": 0, "CIN": 0},
+        {"A": 1, "B": 0, "CIN": 1},
+        {"A": 1, "B": 1, "CIN": 1},
+    ]
+    assert simulate_vectors(_full_adder(), vectors) == [
+        {"SUM": 0, "COUT": 0},
+        {"SUM": 0, "COUT": 1},
+        {"SUM": 1, "COUT": 1},
+    ]
+
+
+def test_simulate_vectors_keeps_input_order():
+    vectors = [{"A": a, "B": b, "CIN": c} for a, b, c in itertools.product((0, 1), repeat=3)]
+    rows = simulate_vectors(_full_adder(), vectors)
+    assert len(rows) == 8
+    for vector, row in zip(vectors, rows):
+        assert row["SUM"] == (vector["A"] + vector["B"] + vector["CIN"]) & 1
+
+
+def test_simulate_vectors_accepts_an_empty_batch():
+    assert simulate_vectors(_full_adder(), []) == []
+
+
+def test_simulate_vectors_rejects_non_mapping_vectors():
+    with pytest.raises(ValueError, match="vector 1 must be a mapping"):
+        simulate_vectors(_full_adder(), [{"A": 0, "B": 0, "CIN": 0}, [0, 1, 0]])
