@@ -5,7 +5,7 @@ import itertools
 import pytest
 
 from alu.logic_unit import simulate_graph
-from alu.shift_unit import build_shift_left_graph, shift_unit
+from alu.shift_unit import build_shift_left_graph, build_shift_right_graph, shift_unit
 
 
 def _drive(width, value, amount):
@@ -85,3 +85,16 @@ def test_left_shifter_graph_has_a_stage_per_amount_bit():
 def test_one_bit_left_shifter_is_a_passthrough():
     graph = build_shift_left_graph(width=1)
     assert _read(graph, 1, 1, 0) == 1
+
+
+def test_right_shifter_graph_matches_the_model():
+    graph = build_shift_right_graph(width=4)
+    for value, amount in itertools.product(range(16), range(4)):
+        assert _read(graph, 4, value, amount) == shift_unit(value, amount, "SRL", 4)
+
+
+def test_right_shifter_graph_fills_with_zeros():
+    graph = build_shift_right_graph(width=4)
+    assert _read(graph, 4, 0b1111, 3) == 0b0001
+    assert _read(graph, 4, 0b1111, 1) == 0b0111
+    assert graph["circuit_name"] == "4-bit Logical Right Shifter"
