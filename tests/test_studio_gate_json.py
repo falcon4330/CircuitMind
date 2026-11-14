@@ -45,3 +45,33 @@ def test_export_assigns_one_numeric_id_per_gate():
     ids = [gate["id"] for gate in payload["gates"]]
     assert ids == list(range(len(ids)))
     assert payload["gateIdCounter"] == len(ids)
+
+
+def test_export_rejects_unknown_gate_types():
+    graph = {
+        "circuit_name": "Mystery",
+        "gates": [{"id": "A", "type": "INPUT"}, {"id": "X", "type": "MULTIPLEXER"}],
+        "wires": [],
+    }
+    with pytest.raises(ValueError, match="unknown gate type 'MULTIPLEXER'"):
+        to_gate_json(graph)
+
+
+def test_export_declares_pins_for_every_known_gate():
+    graph = {
+        "circuit_name": "Pins",
+        "gates": [
+            {"id": "A", "type": "INPUT"},
+            {"id": "B1", "type": "BUFFER"},
+            {"id": "N1", "type": "NAND"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        "wires": [
+            {"from": "A", "to": "B1"},
+            {"from": "A", "to": "Y"},
+            {"from": "B1", "to": "N1"},
+            {"from": "A", "to": "N1"},
+        ],
+    }
+    pins = {gate["label"]: gate["inputs"] for gate in to_gate_json(graph)["gates"]}
+    assert pins == {"A": 0, "B1": 1, "N1": 2, "Y": 1}

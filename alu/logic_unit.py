@@ -284,7 +284,8 @@ def circuit_summary(graph: dict) -> dict:
 
 _UNARY_GATES  = {"NOT", "BUFFER"}
 _BINARY_GATES = {"AND", "NAND", "OR", "NOR", "XOR", "XNOR"}
-_NUM_INPUTS = {"INPUT": 0, "OUTPUT": 1, "NOT": 1}  # every other gate type has 2 inputs
+_NUM_INPUTS = {"INPUT": 0, "OUTPUT": 1, "NOT": 1, "BUFFER": 1}
+_KNOWN_GATES = set(_NUM_INPUTS) | _BINARY_GATES
 
 
 def to_gate_json(graph: dict) -> dict:
@@ -301,6 +302,8 @@ def to_gate_json(graph: dict) -> dict:
 
     for g in graph["gates"]:
         gtype = g["type"]
+        if gtype not in _KNOWN_GATES:
+            raise ValueError(f"unknown gate type {gtype!r} on gate '{g['id']}'")
         if gtype == "INPUT":
             input_count += 1
         elif gtype == "OUTPUT":
