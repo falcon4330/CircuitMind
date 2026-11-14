@@ -87,8 +87,7 @@ def build_shift_left_graph(width: int = 4) -> dict:
     }
 
 
-def build_shift_right_graph(width: int = 4) -> dict:
-    """Barrel shifter: X is shifted right logically by the amount on A0..Ak."""
+def _build_right_graph(width: int, arithmetic: bool) -> dict:
     if width < 1:
         raise ValueError(f"width must be at least 1, got {width}")
     gates, wires = [], []
@@ -100,15 +99,28 @@ def build_shift_right_graph(width: int = 4) -> dict:
     current = [f"X{i}" for i in range(width)]
     for k in range(_amount_bits(width)):
         shift = 1 << k
-        alts = [current[i + shift] if i + shift < width else None
+        # The sign bit never moves, so the previous stage's MSB is the fill.
+        fill = current[width - 1] if arithmetic else None
+        alts = [current[i + shift] if i + shift < width else fill
                 for i in range(width)]
         current = _mux_bank(gates, wires, f"R{k}", f"A{k}", current, alts)
 
     for i in range(width):
         gates.append({"id": f"Y{i}", "type": "OUTPUT"})
         wires.append({"from": current[i], "to": f"Y{i}"})
+    kind = "Arithmetic" if arithmetic else "Logical"
     return {
-        "circuit_name": f"{width}-bit Logical Right Shifter",
+        "circuit_name": f"{width}-bit {kind} Right Shifter",
         "gates": gates,
         "wires": wires,
     }
+
+
+def build_shift_right_graph(width: int = 4) -> dict:
+    """Barrel shifter: X is shifted right logically by the amount on A0..Ak."""
+    return _build_right_graph(width, arithmetic=False)
+
+
+def build_shift_arithmetic_right_graph(width: int = 4) -> dict:
+    """Barrel shifter: X is shifted right arithmetically, keeping the sign."""
+    return _build_right_graph(width, arithmetic=True)

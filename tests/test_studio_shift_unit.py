@@ -5,7 +5,12 @@ import itertools
 import pytest
 
 from alu.logic_unit import simulate_graph
-from alu.shift_unit import build_shift_left_graph, build_shift_right_graph, shift_unit
+from alu.shift_unit import (
+    build_shift_arithmetic_right_graph,
+    build_shift_left_graph,
+    build_shift_right_graph,
+    shift_unit,
+)
 
 
 def _drive(width, value, amount):
@@ -98,3 +103,24 @@ def test_right_shifter_graph_fills_with_zeros():
     assert _read(graph, 4, 0b1111, 3) == 0b0001
     assert _read(graph, 4, 0b1111, 1) == 0b0111
     assert graph["circuit_name"] == "4-bit Logical Right Shifter"
+
+
+def test_arithmetic_right_shifter_graph_matches_the_model():
+    graph = build_shift_arithmetic_right_graph(width=4)
+    for value, amount in itertools.product(range(16), range(4)):
+        assert _read(graph, 4, value, amount) == shift_unit(value, amount, "SRA", 4)
+
+
+def test_arithmetic_right_shifter_keeps_the_sign():
+    graph = build_shift_arithmetic_right_graph(width=4)
+    assert _read(graph, 4, 0b1000, 1) == 0b1100
+    assert _read(graph, 4, 0b1001, 2) == 0b1110
+    assert graph["circuit_name"] == "4-bit Arithmetic Right Shifter"
+
+
+def test_arithmetic_and_logical_right_shifters_differ_only_on_negatives():
+    logical = build_shift_right_graph(width=4)
+    arithmetic = build_shift_arithmetic_right_graph(width=4)
+    assert _read(logical, 4, 0b1000, 1) != _read(arithmetic, 4, 0b1000, 1)
+    for value, amount in itertools.product(range(8), range(4)):
+        assert _read(logical, 4, value, amount) == _read(arithmetic, 4, value, amount)
