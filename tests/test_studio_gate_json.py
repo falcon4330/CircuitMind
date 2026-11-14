@@ -75,3 +75,36 @@ def test_export_declares_pins_for_every_known_gate():
     }
     pins = {gate["label"]: gate["inputs"] for gate in to_gate_json(graph)["gates"]}
     assert pins == {"A": 0, "B1": 1, "N1": 2, "Y": 1}
+
+
+def test_export_rejects_wires_into_input_gates():
+    graph = _wire_gate()
+    graph["wires"].append({"from": "Y", "to": "A"})
+    with pytest.raises(ValueError, match="cannot wire into INPUT gate 'A'"):
+        to_gate_json(graph)
+
+
+def test_export_rejects_wires_past_the_last_pin():
+    graph = {
+        "circuit_name": "Overwired",
+        "gates": [
+            {"id": "A", "type": "INPUT"},
+            {"id": "B", "type": "INPUT"},
+            {"id": "N", "type": "NOT"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        "wires": [
+            {"from": "A", "to": "Y"},
+            {"from": "A", "to": "N"},
+            {"from": "B", "to": "N"},
+        ],
+    }
+    with pytest.raises(ValueError, match=r"'N' \(NOT\) has 1 input pin"):
+        to_gate_json(graph)
+
+
+def test_export_indexes_every_wire_within_its_pin_count():
+    payload = to_gate_json(build_logic_unit_graph(width=2))
+    pins = {gate["id"]: gate["inputs"] for gate in payload["gates"]}
+    for wire in payload["wires"]:
+        assert 0 <= wire["toIndex"] < pins[wire["toId"]]

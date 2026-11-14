@@ -321,9 +321,19 @@ def to_gate_json(graph: dict) -> dict:
         })
 
     wires, pin_index = [], {}
+    types = {g["id"]: g["type"] for g in graph["gates"]}
     for w in graph["wires"]:
         to_id = id_map[w["to"]]
+        gtype = types[w["to"]]
+        capacity = _NUM_INPUTS.get(gtype, 2)
+        if capacity == 0:
+            raise ValueError(f"cannot wire into INPUT gate '{w['to']}'")
         idx = pin_index.get(to_id, 0)
+        if idx >= capacity:
+            raise ValueError(
+                f"gate '{w['to']}' ({gtype}) has {capacity} input pin(s), "
+                f"wire {len(wires)} would need pin {idx + 1}"
+            )
         wires.append({"id": len(wires), "fromId": id_map[w["from"]],
                       "toId": to_id, "toIndex": idx})
         pin_index[to_id] = idx + 1
