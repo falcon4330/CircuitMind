@@ -1,5 +1,5 @@
-"""Shift unit of the ALU: logical left/right shifts driven by an amount bus."""
-MODES = ("SLL", "SRL")
+"""Shift unit of the ALU: logical left/right and arithmetic right shifts."""
+MODES = ("SLL", "SRL", "SRA")
 
 
 def shift_unit(value: int, amount: int, mode: str = "SLL", width: int = 4) -> int:
@@ -16,7 +16,12 @@ def shift_unit(value: int, amount: int, mode: str = "SLL", width: int = 4) -> in
     value &= mask
     if mode == "SLL":
         return (value << amount) & mask
-    return value >> amount
+    if mode == "SRL":
+        return value >> amount
+    result = value >> amount
+    if value & (1 << (width - 1)):
+        result |= (mask << (width - amount)) & mask  # replicate the sign bit
+    return result
 
 
 def _amount_bits(width: int) -> int:

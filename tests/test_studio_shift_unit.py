@@ -31,7 +31,7 @@ def test_shift_right_logical_moves_bits_down():
 
 
 def test_shift_by_zero_keeps_the_value():
-    for mode in ("SLL", "SRL"):
+    for mode in ("SLL", "SRL", "SRA"):
         assert shift_unit(0b1011, 0, mode, 4) == 0b1011
 
 
@@ -42,7 +42,7 @@ def test_shift_masks_the_value_to_the_width():
 
 
 def test_shift_rejects_unknown_modes():
-    with pytest.raises(ValueError, match="mode must be one of SLL, SRL"):
+    with pytest.raises(ValueError, match="mode must be one of SLL, SRL, SRA"):
         shift_unit(1, 1, "ROL", 4)
 
 
@@ -54,6 +54,18 @@ def test_shift_rejects_an_amount_outside_the_width():
 def test_shift_rejects_a_negative_amount():
     with pytest.raises(ValueError, match="amount must be non-negative"):
         shift_unit(1, -1, "SRL", 4)
+
+
+def test_arithmetic_shift_replicates_the_sign_bit():
+    assert shift_unit(0b1000, 1, "SRA", 4) == 0b1100
+    assert shift_unit(0b1000, 3, "SRA", 4) == 0b1111
+    assert shift_unit(0b1100, 2, "SRA", 4) == 0b1111
+
+
+def test_arithmetic_shift_of_a_positive_value_is_logical():
+    for value in range(8):
+        for amount in range(4):
+            assert shift_unit(value, amount, "SRA", 4) == shift_unit(value, amount, "SRL", 4)
 
 
 def test_left_shifter_graph_matches_the_model():
