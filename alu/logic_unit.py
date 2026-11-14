@@ -105,6 +105,10 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
         visiting.add(gid)
         t = types[gid]
         srcs = sources[gid]
+        if t == "INPUT" and srcs:
+            raise ValueError(f"INPUT gate '{gid}' cannot have incoming wires, found {len(srcs)}")
+        if t == "OUTPUT" and len(srcs) != 1:
+            raise ValueError(f"OUTPUT gate '{gid}' needs exactly 1 driver, found {len(srcs)}")
         if t in _UNARY_GATES and len(srcs) != 1:
             raise ValueError(f"gate '{gid}' ({t}) needs exactly 1 input, found {len(srcs)}")
         if t in _BINARY_GATES and len(srcs) < 2:

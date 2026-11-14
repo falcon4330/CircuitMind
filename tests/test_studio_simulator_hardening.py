@@ -230,3 +230,36 @@ def test_unknown_gate_type_names_the_gate():
     )
     with pytest.raises(ValueError, match="IMPLIES.*'G'"):
         simulate_graph(graph, {"A": 1})
+
+
+def test_output_with_two_drivers_is_rejected():
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "B", "type": "INPUT"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [{"from": "A", "to": "Y"}, {"from": "B", "to": "Y"}],
+    )
+    # The second driver used to be ignored silently.
+    with pytest.raises(ValueError, match="needs exactly 1 driver, found 2"):
+        simulate_graph(graph, {"A": 1, "B": 0})
+
+
+def test_output_without_driver_is_rejected():
+    graph = _graph([{"id": "Y", "type": "OUTPUT"}], [])
+    with pytest.raises(ValueError, match="needs exactly 1 driver, found 0"):
+        simulate_graph(graph, {})
+
+
+def test_input_with_incoming_wire_is_rejected():
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "B", "type": "INPUT"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [{"from": "A", "to": "B"}, {"from": "B", "to": "Y"}],
+    )
+    with pytest.raises(ValueError, match="INPUT gate 'B' cannot have incoming wires"):
+        simulate_graph(graph, {"A": 1, "B": 0})
