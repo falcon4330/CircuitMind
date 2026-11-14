@@ -95,10 +95,14 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
         raise ValueError(f"missing input values for: {', '.join(missing)}")
 
     cache = {}
+    visiting: set = set()
 
     def val(gid):
         if gid in cache:
             return cache[gid]
+        if gid in visiting:
+            raise ValueError(f"combinational cycle detected at gate '{gid}'")
+        visiting.add(gid)
         t, ins = types[gid], [val(s) for s in sources[gid]]
         if t == "INPUT":
             r = inputs[gid]
@@ -114,6 +118,7 @@ def simulate_graph(graph: dict, inputs: dict) -> dict:
             r = sum(ins) % 2
         else:
             raise ValueError(f"unknown gate type {t}")
+        visiting.discard(gid)
         cache[gid] = r
         return r
 

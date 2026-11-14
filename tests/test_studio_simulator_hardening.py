@@ -107,3 +107,31 @@ def test_extra_input_values_are_ignored():
         [{"from": "A", "to": "N"}, {"from": "N", "to": "Y"}],
     )
     assert simulate_graph(graph, {"A": 0, "UNUSED": 1}) == {"Y": 1}
+
+
+def test_combinational_cycle_is_reported():
+    graph = _graph(
+        [
+            {"id": "A", "type": "INPUT"},
+            {"id": "N1", "type": "NOT"},
+            {"id": "N2", "type": "NOT"},
+            {"id": "Y", "type": "OUTPUT"},
+        ],
+        [
+            {"from": "A", "to": "N1"},
+            {"from": "N1", "to": "N2"},
+            {"from": "N2", "to": "N1"},
+            {"from": "N2", "to": "Y"},
+        ],
+    )
+    with pytest.raises(ValueError, match="combinational cycle"):
+        simulate_graph(graph, {"A": 1})
+
+
+def test_self_loop_is_reported_as_cycle():
+    graph = _graph(
+        [{"id": "G", "type": "AND"}, {"id": "Y", "type": "OUTPUT"}],
+        [{"from": "G", "to": "G"}, {"from": "G", "to": "Y"}],
+    )
+    with pytest.raises(ValueError, match="combinational cycle"):
+        simulate_graph(graph, {})
