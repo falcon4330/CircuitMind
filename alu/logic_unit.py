@@ -288,8 +288,12 @@ _NUM_INPUTS = {"INPUT": 0, "OUTPUT": 1, "NOT": 1, "BUFFER": 1}
 _KNOWN_GATES = set(_NUM_INPUTS) | _BINARY_GATES
 
 
-def to_gate_json(graph: dict) -> dict:
-    """Convert build_logic_unit_graph() output into the repo's gate_json format."""
+def to_gate_json(graph: dict, circuit_name: str | None = None) -> dict:
+    """Convert build_logic_unit_graph() output into the repo's gate_json format.
+
+    `circuit_name` overrides the graph's own name, which lets the caller keep
+    an unsaved rename when the user exports.
+    """
     from export.export_module import _layout_gates  # reuse the repo's auto-layout
 
     _validate_graph(graph)  # a malformed graph would otherwise fail with a bare KeyError
@@ -341,6 +345,7 @@ def to_gate_json(graph: dict) -> dict:
     _layout_gates(gates, wires)
 
     return {
+        "circuitName": graph.get("circuit_name", "") if circuit_name is None else circuit_name,
         "gates": gates,
         "wires": wires,
         "gateIdCounter": len(gates),

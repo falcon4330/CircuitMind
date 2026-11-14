@@ -108,3 +108,14 @@ def test_export_indexes_every_wire_within_its_pin_count():
     pins = {gate["id"]: gate["inputs"] for gate in payload["gates"]}
     for wire in payload["wires"]:
         assert 0 <= wire["toIndex"] < pins[wire["toId"]]
+
+
+def test_export_carries_the_circuit_name():
+    payload = to_gate_json(build_logic_unit_graph(width=1))
+    assert payload["circuitName"] == "1-bit ALU Logic Unit"
+    assert to_gate_json({"gates": [], "wires": []})["circuitName"] == ""
+
+
+def test_export_accepts_a_name_override():
+    payload = to_gate_json(build_logic_unit_graph(width=1), circuit_name="My ALU")
+    assert payload["circuitName"] == "My ALU"
