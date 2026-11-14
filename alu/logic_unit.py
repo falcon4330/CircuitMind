@@ -291,6 +291,7 @@ def to_gate_json(graph: dict) -> dict:
     """Convert build_logic_unit_graph() output into the repo's gate_json format."""
     from export.export_module import _layout_gates  # reuse the repo's auto-layout
 
+    _validate_graph(graph)  # a malformed graph would otherwise fail with a bare KeyError
     id_map = {g["id"]: i for i, g in enumerate(graph["gates"])}
     gates, input_count, output_count = [], 0, 0
 
