@@ -4,7 +4,7 @@ import itertools
 
 import pytest
 
-from alu.logic_unit import evaluate_all, simulate_graph, simulate_vectors
+from alu.logic_unit import evaluate_all, simulate_graph, simulate_vectors, truth_table_for
 
 
 def _full_adder():
@@ -107,3 +107,33 @@ def test_simulate_vectors_accepts_an_empty_batch():
 def test_simulate_vectors_rejects_non_mapping_vectors():
     with pytest.raises(ValueError, match="vector 1 must be a mapping"):
         simulate_vectors(_full_adder(), [{"A": 0, "B": 0, "CIN": 0}, [0, 1, 0]])
+
+
+def test_truth_table_for_covers_every_input_vector():
+    rows = truth_table_for(_full_adder())
+    assert len(rows) == 8
+    assert rows[0] == {
+        "inputs": {"A": 0, "B": 0, "CIN": 0},
+        "outputs": {"SUM": 0, "COUT": 0},
+    }
+    assert rows[-1] == {
+        "inputs": {"A": 1, "B": 1, "CIN": 1},
+        "outputs": {"SUM": 1, "COUT": 1},
+    }
+
+
+def test_truth_table_for_orders_first_input_slowest():
+    rows = truth_table_for(_full_adder())
+    assert [row["inputs"]["A"] for row in rows] == [0] * 4 + [1] * 4
+    assert [row["inputs"]["CIN"] for row in rows] == [0, 1] * 4
+
+
+def test_truth_table_for_refuses_wide_graphs():
+    inputs = [{"id": f"I{i}", "type": "INPUT"} for i in range(5)]
+    graph = {
+        "circuit_name": "Wide",
+        "gates": inputs + [{"id": "Y", "type": "OUTPUT"}],
+        "wires": [{"from": "I0", "to": "Y"}],
+    }
+    with pytest.raises(ValueError, match="truth table limited to 2"):
+        truth_table_for(graph, max_inputs=2)

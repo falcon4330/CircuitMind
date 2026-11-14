@@ -1,4 +1,5 @@
 """Logic Unit of the ALU: AND, OR, XOR, NOT-A selected by S1S0."""
+import itertools
 from datetime import datetime, timezone
 OPS = {0b00: "AND", 0b01: "OR", 0b10: "XOR", 0b11: "NOT_A"}
 
@@ -173,6 +174,28 @@ def simulate_vectors(graph: dict, vectors) -> list:
             )
         results.append(simulate_graph(graph, inputs))
     return results
+
+
+_MAX_TRUTH_TABLE_INPUTS = 12  # 4096 rows keeps the interactive table usable
+
+
+def truth_table_for(graph: dict, max_inputs: int = _MAX_TRUTH_TABLE_INPUTS) -> list:
+    """Enumerate every input vector and record the resulting outputs.
+
+    Rows follow itertools.product ordering: the first declared INPUT gate is
+    the slowest-changing column, which is the usual truth-table layout.
+    """
+    _validate_graph(graph)
+    input_ids = [g["id"] for g in graph["gates"] if g["type"] == "INPUT"]
+    if len(input_ids) > max_inputs:
+        raise ValueError(
+            f"graph has {len(input_ids)} inputs, truth table limited to {max_inputs}"
+        )
+    rows = []
+    for combination in itertools.product((0, 1), repeat=len(input_ids)):
+        inputs = dict(zip(input_ids, combination))
+        rows.append({"inputs": inputs, "outputs": simulate_graph(graph, inputs)})
+    return rows
 
 
 _UNARY_GATES  = {"NOT", "BUFFER"}
