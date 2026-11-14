@@ -119,3 +119,15 @@ def test_export_carries_the_circuit_name():
 def test_export_accepts_a_name_override():
     payload = to_gate_json(build_logic_unit_graph(width=1), circuit_name="My ALU")
     assert payload["circuitName"] == "My ALU"
+
+
+@pytest.mark.parametrize("width", [0, -1])
+def test_build_logic_unit_graph_rejects_a_non_positive_width(width):
+    with pytest.raises(ValueError, match=f"width must be at least 1, got {width}"):
+        build_logic_unit_graph(width=width)
+
+
+def test_single_bit_logic_unit_still_has_a_full_slice():
+    payload = to_gate_json(build_logic_unit_graph(width=1))
+    labels = {gate["label"] for gate in payload["gates"]}
+    assert {"and0", "or0", "xor0", "not0", "Y0"} <= labels

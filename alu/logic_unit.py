@@ -16,6 +16,8 @@ def logic_unit(a: int, b: int, op: int, width: int = 4) -> int:
 
 def build_logic_unit_graph(width: int = 4) -> dict:
     """Build the logic unit as gates + wires."""
+    if width < 1:
+        raise ValueError(f"width must be at least 1, got {width}")
     gates, wires = [], []
 
     def gate(gid, gtype):
