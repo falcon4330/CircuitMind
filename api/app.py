@@ -23,7 +23,7 @@ from slowapi.extension import _rate_limit_exceeded_handler
 from generate.generate import generate_circuit
 from explain.explain_module import explain_circuit
 from diagnose.diagnose_module import diagnose_circuit
-from export.export_module import export_module
+from export.export_module import export_module, VALID_FORMATS
 from hint.hint_module import generate_hint
 
 # ── LOGGING ──────────────────────────────────────────────────────
@@ -211,6 +211,25 @@ def export(
         raise HTTPException(status_code=422, detail=result["message"])
 
     return result
+
+
+_EXPORT_FORMAT_DESCRIPTIONS = {
+    "spice":     "SPICE netlist (.sp)",
+    "svg":       "SVG schematic diagram",
+    "gate_json": "Gate-level JSON for the logic canvas",
+}
+
+
+@app.get("/export/formats", tags=["core"])
+def export_formats():
+    """List the export formats accepted by POST /export."""
+    return {
+        "count": len(VALID_FORMATS),
+        "formats": [
+            {"name": fmt, "description": _EXPORT_FORMAT_DESCRIPTIONS.get(fmt, "")}
+            for fmt in sorted(VALID_FORMATS)
+        ],
+    }
 
 
 @app.post("/hint", tags=["core"])
