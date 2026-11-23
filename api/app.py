@@ -155,6 +155,21 @@ def root():
 def health():
     return {"status": "ok"}
 
+_HIDDEN_ROUTE_PREFIXES = ("/docs", "/redoc", "/openapi")
+
+@app.get("/api/routes", tags=["health"])
+def api_routes():
+    """List every mounted HTTP route so clients can discover the API surface."""
+    routes = []
+    for route in app.routes:
+        path = getattr(route, "path", None)
+        methods = sorted(getattr(route, "methods", None) or [])
+        if not path or not methods or path.startswith(_HIDDEN_ROUTE_PREFIXES):
+            continue
+        routes.append({"path": path, "methods": methods})
+    routes.sort(key=lambda item: item["path"])
+    return {"count": len(routes), "routes": routes}
+
 # ── CORE ENDPOINTS ───────────────────────────────────────────────
 
 @app.post("/generate", tags=["core"])
