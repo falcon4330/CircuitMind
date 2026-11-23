@@ -40,6 +40,15 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    contact={
+        "name": "QuantumLogicsLabs",
+        "url": "https://github.com/QuantumLogicsLabs/CircuitMind",
+    },
+    license_info={"name": "Proprietary (PPSLA v1.0)"},
+    openapi_tags=[
+        {"name": "health", "description": "Liveness, readiness and API discovery endpoints."},
+        {"name": "core", "description": "Circuit generation, explanation, diagnosis, export and hint endpoints."},
+    ],
 )
 
 # ── RATE LIMITER SETUP ──────────────────────────────────────────
